@@ -6,9 +6,8 @@ const Progress   = require('../models/Progress');
 // ── Connection ────────────────────────────────────────────────
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/conceptgraph';
-  const options = { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 5000 };
   try {
-    await mongoose.connect(uri, options);
+    await mongoose.connect(uri);
     console.log('✅ MongoDB connected');
   } catch (err) {
     console.error('❌ MongoDB connection failed:', err.message);
