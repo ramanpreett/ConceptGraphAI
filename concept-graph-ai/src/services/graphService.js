@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { topicsToGraph, getGraphStats, exportGraphToJSON, exportGraphToCSV } from '../utils/graphConverter';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Convert topics to graph using backend API

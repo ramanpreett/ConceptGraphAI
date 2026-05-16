@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { API_BASE_URL } from '../config/api'
 
 const BOX_W = 160, BOX_H = 80, ROW_H = 160, COL_GAP = 24, PAD_X = 40, PAD_Y = 24
 
@@ -74,7 +75,7 @@ export default function RootCauseGraph({ topics, evalData, dependencyData, onClo
 
     // Always pass the topic itself as the only item — backend detects singleMode
     // and generates "what you need to know BEFORE this topic" prerequisites
-    fetch('http://localhost:5000/api/analyze-dependencies', {
+    fetch(`${API_BASE_URL}/analyze-dependencies`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topics: [subject], extractedText: '', subject }),
     })

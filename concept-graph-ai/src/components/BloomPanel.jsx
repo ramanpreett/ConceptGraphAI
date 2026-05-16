@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DependencyGraph from './DependencyGraph';
+import { API_BASE_URL } from '../config/api';
 
 const BLOOM_ORDER = ['remember','understand','apply','analyze','evaluate','create'];
 const BLOOM_META  = {
@@ -18,7 +19,7 @@ const BLOOM_META  = {
   create:    { label:'Create',    color:'#a855f7', desc:'Design novel solutions' },
 };
 const PASS_SCORE  = { remember:70, understand:70, apply:65, analyze:65, evaluate:60, create:60 };
-const API = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+const API = API_BASE_URL.replace(/\/api$/, '');
 
 /* ─── shared spinner ──────────────────────────────────────────────── */
 const spinStyle = `

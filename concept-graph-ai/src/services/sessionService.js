@@ -3,7 +3,7 @@
  * One Session = one uploaded syllabus with its own topics, questions, and progress.
  */
 
-const API_BASE = 'http://localhost:5000/api';
+import { API_BASE_URL as API_BASE } from '../config/api';
 
 /* ─── create a new session (called when syllabus is uploaded) ── */
 export const createSession = async (userId, { title, subject, extractedText, topicsData }) => {

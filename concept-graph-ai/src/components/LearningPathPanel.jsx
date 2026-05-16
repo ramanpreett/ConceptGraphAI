@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE_URL } from '../config/api'
 
 const ACTION_STYLE = {
   Revise:   { color: '#f59e0b', bg: '#fefce8', border: '#fde68a', icon: '🔄' },
@@ -137,7 +138,7 @@ export default function LearningPathPanel({ weakTopics, allTopics, dependencyDat
     setLoading(true)
     setError(null)
     try {
-      const res  = await fetch('http://localhost:5000/api/learning-path', {
+      const res  = await fetch(`${API_BASE_URL}/learning-path`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

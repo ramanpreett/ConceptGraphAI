@@ -407,7 +407,7 @@ const ConceptGraphPage = () => {
       ? topicObj   // already has { name, subtopics: [...] }
       : { name: practiceTopicId, subtopics: [] };
 
-    fetch('http://localhost:5000/api/questions', {
+    fetch(`${process.env.REACT_APP_API_URL || 'https://conceptgraphai.onrender.com/api'}/questions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

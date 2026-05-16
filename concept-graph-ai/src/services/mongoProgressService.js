@@ -6,7 +6,7 @@
  * Falls back gracefully if the backend is unavailable.
  */
 
-const API_BASE = 'http://localhost:5000/api';
+import { API_BASE_URL as API_BASE } from '../config/api';
 
 /* ─── save full session data ─────────────────────────────────── */
 export const saveProgressToMongo = async (userId, data = {}) => {
