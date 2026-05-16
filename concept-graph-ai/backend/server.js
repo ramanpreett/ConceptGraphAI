@@ -25,7 +25,9 @@ const app  = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ────────────────────────────────────────────────
-app.use(cors());
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.VITE_API_URL || process.env.REACT_APP_API_URL || '*';
+console.log('CORS allowed origin:', FRONTEND_URL);
+app.use(cors({ origin: FRONTEND_URL }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
