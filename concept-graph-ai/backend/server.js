@@ -17,6 +17,7 @@ const progressRoutes   = require('./routes/progressRoutes');
 const sessionRoutes      = require('./routes/sessionRoutes');
 const learningPathRoutes = require('./routes/learningPathRoutes');
 const bloomRoutes        = require('./routes/bloomRoutes');
+const ragRoutes          = require('./routes/ragRoutes');
 const { errorHandlingMiddleware } = require('./utils/middleware');
 const { connectDB } = require('./services/mongoService');
 
@@ -44,6 +45,7 @@ app.use('/api', progressRoutes);
 app.use('/api', sessionRoutes);
 app.use('/api', learningPathRoutes);
 app.use('/api', bloomRoutes);
+app.use('/api', ragRoutes);
 // ── Health check ──────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Server is running', timestamp: new Date().toISOString() });
@@ -58,7 +60,10 @@ app.use((req, res) => {
 app.use(errorHandlingMiddleware);
 
 // ── Start: connect MongoDB then listen ────────────────────────
-connectDB().then(() => {
+connectDB().then((ok) => {
+  if (!ok) {
+    console.warn('⚠️  Database connection failed — starting server without DB. Check logs for details.');
+  }
   app.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);
     console.log(`💾 Upload:     POST /api/upload`);
@@ -67,7 +72,7 @@ connectDB().then(() => {
     console.log(`📊 Evaluate:   POST /api/evaluate\n`);
   });
 }).catch((err) => {
-  console.error('Failed to start server:', err.message);
+  console.error('Unexpected error starting server:', err && err.stack ? err.stack : err);
   process.exit(1);
 });
 
