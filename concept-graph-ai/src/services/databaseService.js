@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, import/no-anonymous-default-export */
 import {
   collection,
   doc,

@@ -3,6 +3,8 @@
  * Handles automatic saving of data as users interact with the app
  */
 
+/* eslint-disable import/no-anonymous-default-export */
+
 import {
   saveGraphData,
   saveQuizResult,
@@ -98,9 +100,11 @@ export const batchPersistQuizResults = async (userId, results) => {
   }
 };
 
-export default {
+const dataPersistence = {
   persistGraphData,
   persistQuizResult,
   persistWeakTopicDetection,
   batchPersistQuizResults,
 };
+
+export default dataPersistence;

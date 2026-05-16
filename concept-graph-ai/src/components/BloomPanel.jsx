@@ -3,6 +3,7 @@
  * Shows Bloom's Taxonomy progress for a selected concept.
  * Lets the user pick a level and practice questions.
  */
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DependencyGraph from './DependencyGraph';

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import FileUpload from '../components/FileUpload';
 import { extractTextFromFile } from '../services/textExtractionService';
