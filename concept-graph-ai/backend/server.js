@@ -29,10 +29,48 @@ const normalizeOrigin = (value) => {
   return value.trim().replace(/\/+$/, '');
 };
 
+const buildAllowedOrigins = () => {
+  const rawOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URLS,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map(normalizeOrigin)
+    .filter((value) => value && value !== '*');
+
+  return new Set(rawOrigins);
+};
+
+const ALLOWED_ORIGINS = buildAllowedOrigins();
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
+
+  if (/^http:\/\/localhost(:\d+)?$/i.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1(:\d+)?$/i.test(origin)) return true;
+
+  return false;
+};
+
 // ── Middleware ────────────────────────────────────────────────
-const FRONTEND_URL = normalizeOrigin(process.env.FRONTEND_URL || '*');
-console.log('CORS allowed origin:', FRONTEND_URL);
-app.use(cors({ origin: FRONTEND_URL }));
+console.log('CORS allowed origins:', [...ALLOWED_ORIGINS]);
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
