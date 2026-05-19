@@ -11,7 +11,7 @@ const GEMINI_API_KEY =
   process.env.GOOGLE_API_KEY ||
   process.env.GOOGLE_GENAI_API_KEY ||
   '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.0-pro';
 
 let geminiClient = null;
 
