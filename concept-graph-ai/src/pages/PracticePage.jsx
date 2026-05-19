@@ -7,6 +7,7 @@ import BloomPanel from '../components/BloomPanel'
 import LearningPathPanel from '../components/LearningPathPanel'
 import RootCauseGraph from '../components/RootCauseGraph'
 import { useAuth } from '../context/AuthContext'
+import { API_BASE_URL } from '../config/api'
 import { persistEvaluation } from '../services/mongoProgressService'
 import { loadSession, getActiveSessionId, saveSessionEvaluation, updateSessionData } from '../services/sessionService'
 
@@ -136,7 +137,7 @@ export default function PracticePage() {
         _seed:       variationSeed, // hint to backend for variation
       }
 
-      const res  = await fetch(`${process.env.REACT_APP_API_URL || 'https://conceptgraphai.onrender.com/api'}/questions`, {
+      const res  = await fetch(`${API_BASE_URL}/questions`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

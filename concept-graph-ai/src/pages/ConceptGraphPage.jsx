@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import FileUpload from '../components/FileUpload';
+import { API_BASE_URL } from '../config/api';
 import { extractTextFromFile } from '../services/textExtractionService';
 import { useTextExtraction } from '../hooks/useTextExtraction';
 import { useTopicExtraction } from '../hooks/useTopicExtraction';
@@ -407,7 +408,7 @@ const ConceptGraphPage = () => {
       ? topicObj   // already has { name, subtopics: [...] }
       : { name: practiceTopicId, subtopics: [] };
 
-    fetch(`${process.env.REACT_APP_API_URL || 'https://conceptgraphai.onrender.com/api'}/questions`, {
+    fetch(`${API_BASE_URL}/questions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
