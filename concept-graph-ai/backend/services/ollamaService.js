@@ -11,7 +11,7 @@ const GEMINI_API_KEY =
   process.env.GOOGLE_API_KEY ||
   process.env.GOOGLE_GENAI_API_KEY ||
   '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
 
 let geminiClient = null;
 
@@ -52,16 +52,25 @@ const generateText = async (prompt, options = {}) => {
 /* ─── connection test ────────────────────────────────────────────────────── */
 const testOllamaConnection = async () => {
   try {
+    console.log('🔍 Gemini: testing connection...');
+    console.log('   API Key present:', !!GEMINI_API_KEY);
+    console.log('   Model:', GEMINI_MODEL);
+
     const response = await generateText('Reply with exactly the single word OK.', {
       temperature: 0,
       numPredict: 10,
     });
 
+    console.log('   Response received:', response.substring(0, 50));
     const connected = /^ok$/i.test(response.trim());
-    console.log('✅ Gemini connection test:', connected ? 'connected' : 'unexpected response');
+    console.log('✅ Gemini connection test:', connected ? 'connected' : `unexpected response: "${response.trim()}"`);
     return connected;
   } catch (error) {
-    console.error('Gemini connection test failed:', error.message);
+    console.error('❌ Gemini connection test failed:');
+    console.error('   Error:', error && error.message ? error.message : String(error));
+    if (error && error.stack) {
+      console.error('   Stack:', error.stack.split('\n').slice(0, 3).join('\n   '));
+    }
     return false;
   }
 };
