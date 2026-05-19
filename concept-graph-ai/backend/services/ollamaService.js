@@ -11,9 +11,40 @@ const GEMINI_API_KEY =
   process.env.GOOGLE_API_KEY ||
   process.env.GOOGLE_GENAI_API_KEY ||
   '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.0-pro';
+const GEMINI_MODEL_OVERRIDE = process.env.GEMINI_MODEL || '';
 
 let geminiClient = null;
+let detectedModel = null;
+
+const listAvailableModels = async () => {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(GEMINI_API_KEY)}`
+    );
+    if (!res.ok) throw new Error(`ListModels failed: ${res.status}`);
+    const data = await res.json();
+    const available = (data.models || [])
+      .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+      .map(m => m.name.replace('models/', ''));
+    console.log('📋 Available Gemini models:', available.join(', '));
+    return available;
+  } catch (err) {
+    console.error('⚠️  listAvailableModels error:', err.message);
+    return [];
+  }
+};
+
+const getDetectedModel = async () => {
+  if (detectedModel) return detectedModel;
+  if (GEMINI_MODEL_OVERRIDE) {
+    detectedModel = GEMINI_MODEL_OVERRIDE;
+    return detectedModel;
+  }
+  const available = await listAvailableModels();
+  detectedModel = available[0] || 'gemini-1.0-pro';
+  console.log('✅ Using Gemini model:', detectedModel);
+  return detectedModel;
+};
 
 const getGeminiClient = () => {
   if (!GEMINI_API_KEY) {
@@ -27,10 +58,11 @@ const getGeminiClient = () => {
   return geminiClient;
 };
 
-const getModel = (options = {}) => {
+const getModel = async (options = {}) => {
   const client = getGeminiClient();
+  const modelName = options.model || (await getDetectedModel());
   return client.getGenerativeModel({
-    model: options.model || GEMINI_MODEL,
+    model: modelName,
     generationConfig: {
       temperature: options.temperature ?? 0.6,
       topP: options.topP ?? 0.9,
@@ -42,7 +74,7 @@ const getModel = (options = {}) => {
 
 /* ─── low-level generate call ───────────────────────────────────────────── */
 const generateText = async (prompt, options = {}) => {
-  const model = getModel(options);
+  const model = await getModel(options);
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const text = typeof response?.text === 'function' ? response.text() : '';
