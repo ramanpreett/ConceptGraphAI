@@ -111,11 +111,29 @@ const testGeminiConnection = testOllamaConnection;
 
 /* ─── JSON extractor ─────────────────────────────────────────────────────── */
 const extractJSON = (text) => {
+  if (!text || typeof text !== 'string') return null;
+  
+  // Direct parse
   try { return JSON.parse(text); } catch (_) { /* fall through */ }
-  const stripped = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  
+  // Remove markdown code blocks
+  let stripped = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
   try { return JSON.parse(stripped); } catch (_) { /* fall through */ }
+  
+  // Find first { and last } and try to parse
+  const firstBrace = stripped.indexOf('{');
+  const lastBrace = stripped.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const candidate = stripped.substring(firstBrace, lastBrace + 1);
+    try { return JSON.parse(candidate); } catch (_) { /* fall through */ }
+  }
+  
+  // Last resort: find any {...} pattern
   const match = stripped.match(/\{[\s\S]*\}/);
-  if (match) { try { return JSON.parse(match[0]); } catch (_) { /* fall through */ } }
+  if (match) { 
+    try { return JSON.parse(match[0]); } catch (_) { /* fall through */ } 
+  }
+  
   return null;
 };
 
@@ -460,7 +478,11 @@ Return ONLY valid JSON:
   try {
     const raw    = await generateText(prompt, { temperature: 0.2, numPredict: 2500 });
     const parsed = extractJSON(raw);
-    if (!parsed) throw new Error('Invalid dependency JSON');
+    if (!parsed) {
+      console.error('⚠️  analyzeDependencies: raw response was not valid JSON');
+      console.error('   First 200 chars:', raw.substring(0, 200));
+      throw new Error('Invalid dependency JSON');
+    }
     if (!Array.isArray(parsed.treeNodes) || parsed.treeNodes.length < 2)
       throw new Error('treeNodes missing or too short');
     console.log(`✅ Dependency tree: ${parsed.treeNodes.length} nodes`);
