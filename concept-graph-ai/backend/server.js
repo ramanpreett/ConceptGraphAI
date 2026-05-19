@@ -30,9 +30,7 @@ const normalizeOrigin = (value) => {
 };
 
 // ── Middleware ────────────────────────────────────────────────
-const FRONTEND_URL = normalizeOrigin(
-  process.env.FRONTEND_URL || process.env.VITE_API_URL || process.env.REACT_APP_API_URL || '*'
-);
+const FRONTEND_URL = normalizeOrigin(process.env.FRONTEND_URL || '*');
 console.log('CORS allowed origin:', FRONTEND_URL);
 app.use(cors({ origin: FRONTEND_URL }));
 app.use(express.json());
