@@ -33,11 +33,18 @@ router.get('/debug/health-full', async (req, res) => {
     if (typeof testGeminiConnection === 'function') {
       const geminiOk = await testGeminiConnection();
       out.gemini = { ok: !!geminiOk };
+      if (!geminiOk) {
+        out.gemini.info = 'testGeminiConnection returned false (check backend logs)';
+      }
     } else {
       out.gemini = { ok: false, info: 'testGeminiConnection not available' };
     }
   } catch (err) {
-    out.gemini = { ok: false, error: err && err.message ? err.message : String(err) };
+    out.gemini = {
+      ok: false,
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack.split('\n').slice(0, 3).join(' | ') : undefined,
+    };
   }
 
   res.json({ success: true, data: out });
