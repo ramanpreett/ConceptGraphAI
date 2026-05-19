@@ -27,8 +27,8 @@ router.get('/progress/:userId', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('❌ GET /progress error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ GET /progress error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -60,8 +60,8 @@ router.post('/progress/:userId', async (req, res) => {
     console.log(`✅ Progress saved for user: ${userId}`);
     return res.json({ success: true, updatedAt: doc.updatedAt });
   } catch (err) {
-    console.error('❌ POST /progress error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ POST /progress error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -93,8 +93,8 @@ router.patch('/progress/:userId/evaluation', async (req, res) => {
     console.log(`✅ Evaluation merged for user: ${userId}`);
     return res.json({ success: true });
   } catch (err) {
-    console.error('❌ PATCH /progress/evaluation error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ PATCH /progress/evaluation error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 

@@ -1,54 +1,72 @@
 /**
- * AI Service — Powered by Ollama (local LLM)
- * Calls http://localhost:11434 using the Ollama REST API.
- * All exported function signatures are identical to the old Gemini version
- * so no other file needs to change.
+ * AI Service — Powered by Google Gemini
+ * Keeps the legacy function names used by the backend so the rest of the app
+ * can keep calling the same module while the provider changes.
  */
 
-const OLLAMA_BASE = process.env.OLLAMA_URL  || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1';
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const GEMINI_API_KEY =
+  process.env.GEMINI_API_KEY ||
+  process.env.GOOGLE_API_KEY ||
+  process.env.GOOGLE_GENAI_API_KEY ||
+  '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+
+let geminiClient = null;
+
+const getGeminiClient = () => {
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured');
+  }
+
+  if (!geminiClient) {
+    geminiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
+  }
+
+  return geminiClient;
+};
+
+const getModel = (options = {}) => {
+  const client = getGeminiClient();
+  return client.getGenerativeModel({
+    model: options.model || GEMINI_MODEL,
+    generationConfig: {
+      temperature: options.temperature ?? 0.6,
+      topP: options.topP ?? 0.9,
+      maxOutputTokens: options.numPredict ?? 1200,
+      responseMimeType: options.json ? 'application/json' : 'text/plain',
+    },
+  });
+};
 
 /* ─── low-level generate call ───────────────────────────────────────────── */
 const generateText = async (prompt, options = {}) => {
-  const body = {
-    model:  options.model || OLLAMA_MODEL,
-    prompt,
-    stream: false,
-    options: {
-      temperature:  options.temperature ?? 0.6,
-      num_predict:  options.numPredict  ?? 1200,
-      top_p:        options.topP        ?? 0.9,
-    },
-  };
-
-  const res = await fetch(`${OLLAMA_BASE}/api/generate`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`Ollama ${res.status}: ${txt.slice(0, 200)}`);
-  }
-
-  const json = await res.json();
-  return (json.response || '').trim();
+  const model = getModel(options);
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = typeof response?.text === 'function' ? response.text() : '';
+  return String(text || '').trim();
 };
 
 /* ─── connection test ────────────────────────────────────────────────────── */
 const testOllamaConnection = async () => {
   try {
-    const res = await fetch(`${OLLAMA_BASE}/api/tags`);
-    if (!res.ok) return false;
-    const json = await res.json();
-    const models = (json.models || []).map(m => m.name);
-    console.log('✅ Ollama running. Available models:', models.join(', '));
-    return models.some(m => m.startsWith(OLLAMA_MODEL.split(':')[0]));
-  } catch {
+    const response = await generateText('Reply with exactly the single word OK.', {
+      temperature: 0,
+      numPredict: 10,
+    });
+
+    const connected = /^ok$/i.test(response.trim());
+    console.log('✅ Gemini connection test:', connected ? 'connected' : 'unexpected response');
+    return connected;
+  } catch (error) {
+    console.error('Gemini connection test failed:', error.message);
     return false;
   }
 };
+
+const testGeminiConnection = testOllamaConnection;
 
 /* ─── JSON extractor ─────────────────────────────────────────────────────── */
 const extractJSON = (text) => {
@@ -58,6 +76,17 @@ const extractJSON = (text) => {
   const match = stripped.match(/\{[\s\S]*\}/);
   if (match) { try { return JSON.parse(match[0]); } catch (_) { /* fall through */ } }
   return null;
+};
+
+const normalizeTopicList = (topicObjects) => (Array.isArray(topicObjects) ? topicObjects : [])
+  .map((topic) => (typeof topic === 'string' ? { name: topic } : topic))
+  .filter((topic) => topic && topic.name);
+
+const buildDocContext = (firstArg, secondArg) => {
+  const parts = [];
+  if (typeof firstArg === 'string' && firstArg.trim()) parts.push(firstArg.trim());
+  if (typeof secondArg === 'string' && secondArg.trim()) parts.push(secondArg.trim());
+  return parts.join('\n\n');
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -103,8 +132,8 @@ Respond ONLY with valid JSON, no explanation, no markdown:
     const raw    = await generateText(prompt, { temperature: 0.1, numPredict: 4000 });
     const parsed = extractJSON(raw);
     if (!parsed || !Array.isArray(parsed.topics) || parsed.topics.length === 0)
-      throw new Error('Invalid topic structure from Ollama');
-    console.log(`✅ Ollama extracted ${parsed.topics.length} topics`);
+      throw new Error('Invalid topic structure from Gemini');
+    console.log(`✅ Gemini extracted ${parsed.topics.length} topics`);
     return parsed;
   } catch (err) {
     console.error('extractTopicsAdvanced error:', err.message);
@@ -115,12 +144,20 @@ Respond ONLY with valid JSON, no explanation, no markdown:
 /* ═══════════════════════════════════════════════════════════════════════════
    2. QUESTION GENERATION
 ══════════════════════════════════════════════════════════════════════════════ */
-const generateDocumentQuestions = async (topicObjects, docSnippet, questionsPerTopic = 3, seed = 0) => {
-  const topicList = topicObjects.map(t => typeof t === 'string' ? { name: t } : t);
-  const hasDoc    = docSnippet && docSnippet.trim().length > 50;
-  const docCtx    = hasDoc ? docSnippet.slice(0, 2000) : '';
-  const topics    = topicList; // no cap — process all extracted topics
-  const qPerTopic = Math.max(1, questionsPerTopic);
+const generateDocumentQuestions = async (topicObjects, docSnippetOrContext, questionsPerTopicOrDocText = 3, seed = 0) => {
+  const topicList = normalizeTopicList(topicObjects);
+
+  const controllerStyleCall = typeof questionsPerTopicOrDocText === 'number' || typeof questionsPerTopicOrDocText === 'undefined';
+  const docCtx = controllerStyleCall
+    ? (typeof docSnippetOrContext === 'string' ? docSnippetOrContext.slice(0, 2000) : '')
+    : buildDocContext(docSnippetOrContext, questionsPerTopicOrDocText).slice(0, 2000);
+
+  const topics = topicList; // no cap — process all extracted topics
+  const qPerTopic = controllerStyleCall
+    ? Math.max(1, Number(questionsPerTopicOrDocText) || 3)
+    : 3;
+
+  const questionSeed = controllerStyleCall ? seed : 0;
 
   const ANGLES = [
     'definition and explanation',
@@ -129,9 +166,9 @@ const generateDocumentQuestions = async (topicObjects, docSnippet, questionsPerT
     'problem-solving and design',
     'evaluation and critique',
   ];
-  const questionAngle = ANGLES[Math.floor(seed / 1000) % ANGLES.length];
+  const questionAngle = ANGLES[Math.floor(questionSeed / 1000) % ANGLES.length];
 
-  console.log(`✨ Ollama: generating ${qPerTopic} questions per topic for ${topics.length} topics...`);
+  console.log(`✨ Gemini: generating ${qPerTopic} questions per topic for ${topics.length} topics...`);
 
   const perTopicPromises = topics.map(async (topicObj) => {
     const topicName   = topicObj.name;
@@ -204,7 +241,7 @@ const parseQuestions = (raw, topicName, limit = 3, parentTopic = null) => {
       topic:       topicName,
       parentTopic: parentTopic || undefined,
       difficulty:  idx < 1 ? 'beginner' : idx < 2 ? 'intermediate' : 'advanced',
-      source:      'ollama',
+      source:      'gemini',
     });
 
     if (questions.length >= limit) break;
@@ -253,7 +290,7 @@ Respond ONLY with valid JSON (no markdown):
     const raw    = await generateText(prompt, { temperature: 0.3, numPredict: 800 });
     const parsed = extractJSON(raw);
     if (!parsed || typeof parsed.score !== 'number')
-      throw new Error('Invalid evaluation JSON from Ollama');
+      throw new Error('Invalid evaluation JSON from Gemini');
 
     const score  = Math.max(0, Math.min(100, Math.round(parsed.score)));
     const rating = score >= 75 ? 'strong' : score >= 45 ? 'partial' : 'weak';
@@ -269,11 +306,11 @@ Respond ONLY with valid JSON (no markdown):
         length:        parsed.scores?.depth     ?? score,
         understanding: parsed.scores?.examples  ?? score,
       },
-      feedback:        parsed.feedback        || 'Evaluated by Ollama',
+      feedback:        parsed.feedback        || 'Evaluated by Gemini',
       strengths:       parsed.strengths       || [],
       improvements:    parsed.improvements    || [],
       missingConcepts: parsed.missingConcepts || [],
-      source: 'ollama',
+      source: 'gemini',
     };
   } catch (err) {
     console.error('evaluateAnswer error:', err.message);
@@ -467,6 +504,7 @@ const generateAdvancedQuestions = async (topics, context = '') => {
 
 module.exports = {
   testOllamaConnection,
+  testGeminiConnection,
   generateText,
   extractTopicsAdvanced,
   generateDocumentQuestions,

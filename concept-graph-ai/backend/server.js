@@ -15,6 +15,7 @@ const pipelineRoutes   = require('./routes/pipelineRoutes');
 const ollamaRoutes     = require('./routes/ollamaRoutes');
 const progressRoutes   = require('./routes/progressRoutes');
 const sessionRoutes      = require('./routes/sessionRoutes');
+const debugRoutes      = require('./routes/debugRoutes');
 const learningPathRoutes = require('./routes/learningPathRoutes');
 const bloomRoutes        = require('./routes/bloomRoutes');
 const ragRoutes          = require('./routes/ragRoutes');
@@ -60,6 +61,25 @@ const isAllowedOrigin = (origin) => {
 
 // ── Middleware ────────────────────────────────────────────────
 console.log('CORS allowed origins:', [...ALLOWED_ORIGINS]);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (isAllowedOrigin(origin)) {
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+  }
+
+  next();
+});
 app.use(
   cors({
     origin(origin, callback) {
@@ -88,6 +108,7 @@ app.use('/api', pipelineRoutes);
 app.use('/api', ollamaRoutes);
 app.use('/api', progressRoutes);
 app.use('/api', sessionRoutes);
+app.use('/api', debugRoutes);
 app.use('/api', learningPathRoutes);
 app.use('/api', bloomRoutes);
 app.use('/api', ragRoutes);

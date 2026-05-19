@@ -33,8 +33,8 @@ router.post('/sessions/:userId', async (req, res) => {
     console.log(`✅ Session created: ${session._id} for user ${userId}`);
     res.status(201).json({ success: true, sessionId: session._id.toString(), session: _summary(session) });
   } catch (err) {
-    console.error('❌ POST /sessions error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ POST /sessions error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -52,8 +52,8 @@ router.get('/sessions/user/:userId', async (req, res) => {
 
     res.json({ success: true, sessions: sessions.map(_summary) });
   } catch (err) {
-    console.error('❌ GET /sessions/user error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ GET /sessions/user error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -84,8 +84,8 @@ router.get('/sessions/:sessionId', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('❌ GET /sessions/:id error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ GET /sessions/:id error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -107,8 +107,8 @@ router.patch('/sessions/:sessionId/data', async (req, res) => {
     console.log(`✅ Session data updated: ${req.params.sessionId}`);
     res.json({ success: true, updatedAt: session.updatedAt });
   } catch (err) {
-    console.error('❌ PATCH /sessions/data error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ PATCH /sessions/data error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -139,8 +139,8 @@ router.patch('/sessions/:sessionId/evaluation', async (req, res) => {
     console.log(`✅ Evaluation merged for session: ${req.params.sessionId}`);
     res.json({ success: true, masteredCount: $set.masteredCount });
   } catch (err) {
-    console.error('❌ PATCH /sessions/evaluation error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ PATCH /sessions/evaluation error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
@@ -154,8 +154,8 @@ router.delete('/sessions/:sessionId', async (req, res) => {
     console.log(`✅ Session deleted: ${req.params.sessionId}`);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ DELETE /sessions error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('❌ DELETE /sessions error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, message: (err && err.message) || String(err) });
   }
 });
 
